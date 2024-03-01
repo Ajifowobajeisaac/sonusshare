@@ -3,7 +3,7 @@ SonoShare - A Cross-Platform Playlist Conversion Web Application
 
 Team member - Isaac Ajifowobaje (full stack developer)
 
-<h3>Technologies</h3>:
+<h3>Technologies</h3>
 	
 Backend: Python (Django), MySQL
 		An alternative is NodeJs but Django has batteries included aiding faster deployment
@@ -24,7 +24,7 @@ Backend: Python (Django), MySQL
  	This project will be free and have not payment integrations
 
 
-3. <h3>Existing Solutions</h3>: Tools like SongShift, Soundiiz and  anniemusic exist but have their strengths and imitations.
+3. <h3>Existing Solutions</h3> Tools like SongShift, Soundiiz and  anniemusic exist but have their strengths and imitations.
 
 	SongShifts is a native app and downloading adds an extra step. It is also only available on iOS
 	Soundiiz is a web app that does most things right. However the UI could be more intuitive
@@ -51,7 +51,7 @@ Security Considerations: Auth0 would be employed to ensure secure access for use
 		Rudimentary analytics to track conversion statistics for users.
 
 
-5. <h3>Infrastructure</h3>:
+5. <h3>Infrastructure</h3>
 	
  	Deployment Strategy: Continuous Deployment
 	Deployment Platform: Heroku: Beginner-friendly, integrates well with Python apps.
