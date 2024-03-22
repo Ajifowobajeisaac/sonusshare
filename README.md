@@ -55,7 +55,7 @@ Security Considerations: Auth0 would be employed to ensure secure access for use
 	
  	Deployment Strategy: Continuous Deployment
 	Deployment Platform: Heroku: Beginner-friendly, integrates well with Python apps.
-		An alternative is AWS (Elastic Beanstalk): More scalable, but has more moving parts. We want to deploy quicky, get the product to user so to test and iterate.
+		An alternative is AWS (Elastic Beanstalk): More scalable, but has more moving parts. We want to deploy quickly, get the product to users so to test and iterate.
 
 	Version Control Connection: Git repository link to Heroku
 Automation: Platform automatically deploy updates from the main branch whenever new code is pushed
