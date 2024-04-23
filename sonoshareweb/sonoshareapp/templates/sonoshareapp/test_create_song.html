@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Create Song</title>
+</head>
+<body>
+    <h1>Test Create Song</h1>
+    
+    {% if song %}
+        <p>Song created successfully:</p>
+        <ul>
+            <li>Title: {{ song.title }}</li>
+            <li>Artist: {{ song.artist }}</li>
+            <li>Album: {{ song.album_name }}</li>
+            <li>Duration: {{ song.duration_ms }} ms</li>
+            <li>Spotify ID: {{ song.service_id }}</li>
+        </ul>
+    {% elif error %}
+        <p>Error: {{ error }}</p>
+    {% else %}
+        <p>No song created yet.</p>
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Create Song</button>
+    </form>
+</body>
+</html>
