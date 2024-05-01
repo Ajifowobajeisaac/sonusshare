@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Test Create Song</title>
+    <title>Test Convert Song</title>
 </head>
 <body>
-    <h1>Test Create Song</h1>
+    <h1>Test Convert Song</h1>
     
     {% if song %}
-        <p>Song created successfully:</p>
+        <p>Song converted successfully:</p>
         <ul>
             <li>Title: {{ song.title }}</li>
             <li>Artist: {{ song.artist }}</li>
@@ -18,12 +18,21 @@
     {% elif error %}
         <p>Error: {{ error }}</p>
     {% else %}
-        <p>No song created yet.</p>
+        <p>No song converted yet.</p>
     {% endif %}
-    
+
+    {% if playlist %}
+    <h2>Playlist converted successfully:</h2>
+    <ul>
+        <li>Name: {{ playlist.name }}</li>
+        <li>Spotify ID: {{ playlist.id }}</li>
+    </ul>
+    {% endif %}
+
     <form method="post">
         {% csrf_token %}
-        <button type="submit">Create Song</button>
+        <button type="submit">Convert Song</button>
     </form>
 </body>
+
 </html>
