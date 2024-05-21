@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import create_user_playlist, index, convert_playlist
+from . import views
 
 urlpatterns = [
-    path('convert-playlist/', convert_playlist, name='convert_playlist'),
-    path('create-user-playlist/', create_user_playlist, name='create_user_playlist'),
-    path('', index, name='index'),
+    path('', views.index, name='index'),
+    path('convert_playlist/', views.convert_playlist, name='convert_playlist'),
+    path('create_spotify_playlist/', views.create_spotify_playlist, name='create_spotify_playlist'),
+    path('error/', views.error, name='error'),  
 ]
