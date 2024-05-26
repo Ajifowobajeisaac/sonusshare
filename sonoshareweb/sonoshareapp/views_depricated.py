@@ -11,6 +11,8 @@ import base64
 import hashlib
 import os
 import time
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 SPOTIFY_CLIENT_ID = '31e4302c101d4027ab0da2c6be1763ca'
 SPOTIFY_CLIENT_SECRET = 'f78a7bde118241c0ae48493ff5bfe4ab'
@@ -57,26 +59,37 @@ def convert_playlist(request):
                 track_info = extract_track_info(playlist['data'][0]['relationships']['tracks']['data'], 'apple_music')
                 print(f"Extracted track info: {track_info}")
                 
-                spotify_track_ids = []
+
+                spotify_track_ids = search_tracks_on_spotify(track_info)
                 spotify_tracks = {}
                 for track in track_info:
                     # print(f"Searching for track on Spotify: {track['name']} by {track['artist']}")
                     spotify_tracks.update({track['name'] : track['artist']})
-                    spotify_id = search_track_on_spotify(track['name'], track['artist'])
-                    if spotify_id:
-                        # print(f"Track found on Spotify with ID: {spotify_id}")
-                        spotify_track_ids.append(spotify_id)
-                    else:
-                        print(f"Track not found on Spotify: {track['name']} by {track['artist']}")
+
+                progress = {
+                    'current_song': '',
+                    'current_index': 0,
+                    'total_songs': len(track_info)
+                }
+                
+                channel_layer = get_channel_layer()
+                async_to_sync(channel_layer.group_send)(
+                    'playlist_conversion',
+                    {
+                        'type': 'conversion_progress',
+                        'message': progress
+                    }
+                )
 
                 playlist_description = playlist['data'][0]['attributes'].get('description', {}).get('standard', '')
                 
                 print("Creating Spotify playlist")
-                return render(request, 'sonoshareapp/review_playlist.html', {
+                return JsonResponse({
                     'playlist_name': playlist['data'][0]['attributes']['name'],
                     'playlist_description': playlist_description,
-                    'track_id' : spotify_track_ids,
-                    'tracks' : spotify_tracks,
+                    'track_ids': spotify_track_ids,
+                    'track_info': track_info,
+                    'status': 'success'
                 })
             except spotipy.SpotifyException as e:
                 if e.http_status == 429:
@@ -161,6 +174,22 @@ def get_spotify_playlist(request, playlist_id):
     return sp.playlist(playlist_id)
 
 def create_spotify_playlist(request):
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        description = request.POST.get('description')
+        track_ids = request.POST.get('track_ids').split(',')
+        
+        try:
+            # Create Spotify playlist
+            playlist_url = create_spotify_playlist_helper(request, name, description, track_ids)
+            return JsonResponse({'status': 'success', 'playlist_url': playlist_url})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    else:
+        return redirect('index')
+
+def create_spotify_playlist_helper(request, name, description, track_ids):
     client_id = SPOTIFY_CLIENT_ID
     client_secret = SPOTIFY_CLIENT_SECRET
     redirect_uri = SPOTIFY_REDIRECT_URI
@@ -168,23 +197,43 @@ def create_spotify_playlist(request):
 
     token = util.prompt_for_user_token(request.session.session_key, scope, client_id, client_secret, redirect_uri)
 
-    if request.method == 'POST':
-        name = request.POST.get('name')
-        description = request.POST.get('description')
-        track_ids = request.POST.get('track_ids').split(',')
-        
-
     if token:
         sp = spotipy.Spotify(auth=token)
         user_id = sp.me()['id']
-        playlist = sp.user_playlist_create(user_id, name, description)
+        playlist = sp.user_playlist_create(user_id, name, description=description)
         sp.user_playlist_add_tracks(user_id, playlist['id'], track_ids)
         playlist_url = playlist['external_urls']['spotify']
-        return render(request, 'sonoshareapp/playlist_created.html', {
-            'playlist_url': playlist_url,
-        })
+        return playlist_url
     else:
         raise Exception("Failed to get Spotify access token")
+
+
+
+def search_tracks_on_spotify(track_info):
+    track_ids = []
+    for index, track in enumerate(track_info, start=1):
+        track_name = track['name']
+        artist_name = track['artist']
+        spotify_id = search_track_on_spotify(track_name, artist_name)
+        if spotify_id:
+            track_ids.append(spotify_id)
+        
+        # Update progress information
+        progress = {
+            'current_song': track_name,
+            'current_index': index,
+            'total_songs': len(track_info)
+        }
+        
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            'playlist_conversion',
+            {
+                'type': 'conversion_progress',
+                'message': progress
+            }
+        )
+    return track_ids   
 
 def search_track_on_spotify(track_name, artist_name):
     # Obtain an access token using the Client Credentials flow

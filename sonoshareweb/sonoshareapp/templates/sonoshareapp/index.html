@@ -238,11 +238,17 @@
             <img src="{% static 'sonoshareapp/images/youtube-music-logo.svg' %}" alt="YouTube Music Logo">
         </div>
         <div class="input-container">
-            <form method="post" action="{% url 'convert_playlist' %}">
+            <form id="playlist-form" method="post" action="{% url 'convert_playlist' %}">
                 {% csrf_token %}
                 <input type="text" name="playlist_url" placeholder="Paste your playlist link here">
                 <button type="submit">Convert</button>
             </form>
+        </div>
+        <div id="progress-container" style="display: none;">
+            <div class='progress-wrapper'>
+                <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;"></div>
+            </div>
+            <div id="progress-bar-message">Waiting for progress to start...</div>
         </div>
         <div class="image-container">
             <img src="{% static 'sonoshareapp/images/image4.jpg' %}" alt="Image 1">
@@ -250,31 +256,48 @@
             <img src="{% static 'sonoshareapp/images/image3.jpg' %}" alt="Image 3">
         </div>
         <div class="note-container">
-            <p>Please note that conversions to and from Apple Music are currently unavailable as we are working on integrating Apple Music. Stay tuned for updates!</p>
-            <div class="countdown-container">
-                <span id="days">0</span> days to Apple Music integration
-            </div>
+            <p>Please note that conversions to and from YouTube Music are currently unavailable as we are working on integrating YouTube Music. Stay tuned for updates!</p>
         </div>
     </main>
 
+    <script src="{% static 'celery_progress/celery_progress.js' %}"></script>
     <script>
-        // Countdown timer
-        var countDownDate = new Date().getTime() + (8 * 24 * 60 * 60 * 1000); // 8 days from now
-
-        var countdownTimer = setInterval(function() {
-            var now = new Date().getTime();
-            var distance = countDownDate - now;
-
-            var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-
-            document.getElementById("days").innerHTML = days < 10 ? "0" + days : days;
-
-            if (distance < 0) {
-                clearInterval(countdownTimer);
-                document.getElementById("days").innerHTML = "00";
-            }
-        }, 1000);
+        document.addEventListener("DOMContentLoaded", function () {
+            var playlistForm = document.getElementById('playlist-form');
+            var progressContainer = document.getElementById('progress-container');
+            var progressBarElement = document.getElementById('progress-bar');
+            var progressBarMessageElement = document.getElementById('progress-bar-message');
+    
+            playlistForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+                var formData = new FormData(playlistForm);
+    
+                fetch("{% url 'convert_playlist' %}", {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    var taskId = data.task_id;
+                    var progressUrl = "{% url 'celery_progress:task_status' task_id='placeholder' %}".replace('placeholder', taskId);
+    
+                    progressContainer.style.display = 'block';
+                    CeleryProgressBar.initProgressBar(progressUrl, {
+                        onProgress: function (progressBarElement, progressBarMessageElement, progress) {
+                            progressBarElement.style.width = progress.percent + "%";
+                            progressBarMessageElement.innerHTML = progress.description;
+                        },
+                        onSuccess: function (progressBarElement, progressBarMessageElement, result) {
+                            progressBarElement.style.width = "100%";
+                            progressBarMessageElement.innerHTML = "Conversion completed!";
+                            setTimeout(function () {
+                                window.location.href = "{% url 'review_playlist' %}" + "?data=" + encodeURIComponent(JSON.stringify(result));
+                            }, 2000);
+                        },
+                    });
+                });
+            });
+        });
     </script>
-    </main>
 </body>
 </html>

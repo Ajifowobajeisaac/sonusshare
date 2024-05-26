@@ -17,99 +17,41 @@
         background-color: #f2f2f2;
     }
 </style>
-<div id="progress">
-    <p>Processing song <span id="current-index"></span> of <span id="total-songs"></span></p>
-    <p>Current song: <span id="current-song"></span></p>
-  </div>
-  
-  <div id="playlist-info" style="display: none;">
-    <p><strong>Playlist Name:</strong> <span id="playlist-name"></span></p>
-    <p><strong>Playlist Description:</strong> <span id="playlist-description"></span></p>
-    
-    <table>
-      <thead>
+
+<p><strong>Playlist Name:</strong> {{ playlist_name }}</p>
+    {% if playlist_description %}
+        <p><strong>Playlist Description:</strong> {{ playlist_description }}</p>
+    {% endif %}
+
+<table>
+    <thead>
         <tr>
-          <th>Source Track</th>
-          <th>Spotify Track</th>
+            <th>Source Track</th>
+            <th>Spotify Track</th>
         </tr>
-      </thead>
-      <tbody id="track-list"></tbody>
-    </table>
-  
-    <form method="post" action="{% url 'create_spotify_playlist' %}">
-      {% csrf_token %}
-      <input type="hidden" name="name" id="form-playlist-name">
-      <input type="hidden" name="description" id="form-playlist-description">
-      <input type="hidden" name="track_ids" id="form-track-ids">
-      <button type="submit">Create Playlist</button>
-    </form>
-  </div>
-  
-  {% endblock %}
-  
-  {% block extra_scripts %}
-  <script>
-    // Function to update progress information
-    function updateProgress(progress) {
-      document.getElementById('current-index').textContent = progress.current_index;
-      document.getElementById('total-songs').textContent = progress.total_songs;
-      document.getElementById('current-song').textContent = progress.current_song;
-    }
-  
-    // Function to handle playlist conversion response
-    function handleConversionResponse(response) {
-      if (response.status === 'success') {
-        document.getElementById('playlist-info').style.display = 'block';
-        document.getElementById('playlist-name').textContent = response.playlist_name;
-        document.getElementById('playlist-description').textContent = response.playlist_description;
-        document.getElementById('form-playlist-name').value = response.playlist_name;
-        document.getElementById('form-playlist-description').value = response.playlist_description;
-        document.getElementById('form-track-ids').value = response.track_ids.join(',');
-  
-        // Populate the track list table
-        var trackList = document.getElementById('track-list');
-        trackList.innerHTML = '';
-        response.track_info.forEach(function(track) {
-          var row = document.createElement('tr');
-          var sourceTrackCell = document.createElement('td');
-          sourceTrackCell.textContent = track.name + ' - ' + track.artist;
-          var spotifyTrackCell = document.createElement('td');
-          spotifyTrackCell.textContent = track.spotify_id ? 'Match found' : 'No match found';
-          row.appendChild(sourceTrackCell);
-          row.appendChild(spotifyTrackCell);
-          trackList.appendChild(row);
-        });
-      } else {
-        alert('Error: ' + response.error);
-      }
-    }
-  
-    // Function to handle form submission
-    document.querySelector('form').addEventListener('submit', function(event) {
-      event.preventDefault();
-      var playlistUrl = document.getElementById('playlist-url').value;
-      
-      // Send playlist URL to the server for conversion
-      fetch('/convert_playlist/', {
-        method: 'POST',
-        body: JSON.stringify({ playlist_url: playlistUrl }),
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}'
-        }
-      })
-      .then(function(response) {
-        return response.json();
-      })
-      .then(function(data) {
-        handleConversionResponse(data);
-      })
-      .catch(function(error) {
-        console.error('Error:', error);
-      });
-    });
-  
-    // Fetch progress information periodically or establish WebSocket connection
-    // ...
-  </script>
-  {% endblock %}
+    </thead>
+    <tbody>
+        {% for track_name, artist_name in tracks.items %}
+        <tr>
+            <td>{{ track_name }} - {{ artist_name }}</td>
+            <td>
+                {% if track_name in tracks %}
+                    {{ track_name }} - {{ artist_name }}
+                {% else %}
+                    No match found
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<form method="post" action="{% url 'create_spotify_playlist' %}">
+    {% csrf_token %}
+    <input type="hidden" name="name" value="{{ playlist_name }}">
+    <input type="hidden" name="description" value="{{ playlist_description }}">
+    <input type="hidden" name="track_ids" value="{{ track_id|join:',' }}">
+    <button type="submit">Create Playlist</button>
+</form>
+
+{% endblock %}

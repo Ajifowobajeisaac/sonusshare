@@ -1,0 +1,31 @@
+{% extends 'sonoshareapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class='progress-wrapper'>
+    <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;"></div>
+</div>
+<div id="progress-bar-message">Waiting for progress to start...</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'celery_progress/celery_progress.js' %}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var progressUrl = "{% url 'celery_progress:task_status' task_id %}";
+        CeleryProgressBar.initProgressBar(progressUrl, {
+            onProgress: function (progressBarElement, progressBarMessageElement, progress) {
+                progressBarElement.style.width = progress.percent + "%";
+                progressBarMessageElement.innerHTML = progress.description;
+            },
+            onSuccess: function (progressBarElement, progressBarMessageElement, result) {
+                progressBarElement.style.width = "100%";
+                progressBarMessageElement.innerHTML = "Conversion completed!";
+                setTimeout(function () {
+                    window.location.href = "{% url 'review_playlist' %}" + "?data=" + encodeURIComponent(JSON.stringify(result));
+                }, 2000);
+            },
+        });
+    });
+</script>
+{% endblock %}
