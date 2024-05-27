@@ -1,1 +1,1 @@
-web: gunicorn sonoshareapp.wsgi
+web: gunicorn sonoshareweb.wsgi
