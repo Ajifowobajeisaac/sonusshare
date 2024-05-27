@@ -1,4 +1,3 @@
-# views.py
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
 from .models import Song
@@ -16,7 +15,15 @@ def convert_playlist(request):
     if request.method == 'POST':
         playlist_url = request.POST.get('playlist_url')
         task = convert_playlist_.delay(playlist_url)
+
         return JsonResponse({'task_id': task.task_id})
+    else:
+        return redirect('index')
+
+def progress(request):
+    task_id = request.session.get('task_id')
+    if task_id:
+        return render(request, 'sonoshareapp/progress.html', {'task_id': task_id})
     else:
         return redirect('index')
     
