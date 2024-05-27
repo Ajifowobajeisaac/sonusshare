@@ -14,7 +14,7 @@ click-plugins==1.1.1
 click-repl==0.3.0
 cryptography==42.0.7
 cryptograpy==0.0.0
-Django==5.0.4
+Django==4.2.13
 djangorestframework==3.15.1
 gunicorn==22.0.0
 idna==3.7
