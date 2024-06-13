@@ -17,6 +17,7 @@ cryptograpy==0.0.0
 distlib==0.3.8
 dj-database-url==2.1.0
 Django==4.2.13
+django-celery-results>=2.2.0
 djangorestframework==3.15.1
 filelock==3.14.0
 gunicorn==22.0.0
@@ -28,10 +29,11 @@ pipenv==2023.12.1
 platformdirs==4.2.2
 prompt-toolkit==3.0.43
 pycparser==2.22
+psycopg2-binary==2.9.3
 PyJWT==2.8.0
 python-dateutil==2.9.0.post0
 python-jwt==4.1.0
-redis==5.0.3
+redis>=3.5.3
 requests==2.31.0
 six==1.16.0
 spotipy==2.23.0
@@ -39,7 +41,6 @@ sqlparse==0.4.4
 typing_extensions==4.11.0
 tzdata==2024.1
 urllib3==2.2.1
-vine==5.1.0
 virtualenv==20.26.2
 wcwidth==0.2.13
 whitenoise==6.6.0

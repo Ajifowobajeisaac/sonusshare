@@ -9,7 +9,6 @@ COPY requirements.txt .
 
 # Install the dependencies
 RUN pip install --no-cache-dir -r requirements.txt
-RUN apt-get update && apt-get install -y redis-server
 
 # Copy the entire project into the container
 COPY . .
@@ -18,7 +17,7 @@ COPY . .
 RUN python manage.py collectstatic --no-input
 
 # Expose the port that the Django app will run on
-EXPOSE 8000
+EXPOSE $PORT
 
 # Set the command to run the Django app
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD gunicorn sonoshareweb.wsgi --bind 0.0.0.0:$PORT --limit-request-line 8192

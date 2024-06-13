@@ -1,0 +1,58 @@
+{% extends 'sonoshareapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .success-container {
+        text-align: center;
+        margin-top: 50px;
+    }
+
+    .success-container h2 {
+        font-size: 36px;
+        color: #fff;
+        margin-bottom: 20px;
+    }
+
+    .success-container p {
+        font-size: 20px;
+        color: #fff;
+        margin-bottom: 30px;
+    }
+
+    .success-container a {
+        display: inline-block;
+        padding: 12px 30px;
+        font-size: 18px;
+        background-color: #FF99C8;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 25px;
+        transition: background-color 0.3s ease;
+    }
+
+    .success-container a:hover {
+        background-color: #FF6B9F;
+    }
+
+    @media screen and (max-width: 768px) {
+        .success-container {
+            margin-top: 30px;
+        }
+
+        .success-container h2 {
+            font-size: 28px;
+        }
+
+        .success-container p {
+            font-size: 16px;
+        }
+    }
+</style>
+
+<div class="success-container">
+    <h2>Thank you for your interest!</h2>
+    <p>Your request for beta testing has been submitted successfully. We will notify you via email once your access is granted.</p>
+
+</div>
+{% endblock %}

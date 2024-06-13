@@ -1,0 +1,16 @@
+<!-- contact.html -->
+{% extends 'base.html' %}
+
+{% block title %}Contact - SonusShare{% endblock %}
+
+{% block content %}
+<div class="contact-us-section">
+    <h2>Contact Us</h2>
+    <form action="mailto:support@sonusshare.com" method="post" enctype="text/plain">
+        <input type="text" name="name" placeholder="Your Name" required>
+        <input type="email" name="email" placeholder="Your Email" required>
+        <textarea name="message" rows="5" placeholder="Your Message" required></textarea>
+        <button type="submit">Send Message</button>
+    </form>
+</div>
+{% endblock %}

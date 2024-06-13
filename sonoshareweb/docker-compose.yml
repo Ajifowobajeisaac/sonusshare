@@ -1,29 +1,16 @@
 version: '3'
-
 services:
   web:
     build:
       context: .
-      platform: linux/amd64
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    depends_on:
-      - redis
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0
-
-  redis:
-    image: redis
-
   celery:
     build:
       context: .
-      platform: linux/amd64
-    command: celery -A sonoshareweb worker --beat --scheduler django --loglevel=info
+      dockerfile: Dockerfile.celery
+    environment:
+      - STACKHERO_REDIS_URL_TLS
     depends_on:
       - web
-      - redis
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://redis:6379/0

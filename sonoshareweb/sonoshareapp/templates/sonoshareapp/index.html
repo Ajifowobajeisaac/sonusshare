@@ -1,3 +1,4 @@
+<!-- index.html  -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -199,20 +200,93 @@
             color: #333;
             line-height: 1.5;
         }
+        @media screen and (max-width: 768px) {
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #CDB4DB, #FFC8DD, #FFAFCC, #BDE0FE, #A2D2FF);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+            overflow: auto;
+        }
+        main {
+            margin: 20px auto;
+            padding: 10px;
+        }
 
-        .countdown-container {
-            display: flex;
-            justify-content: center;
+        h2 {
+            font-size: 28px;
+        }
+
+        p {
+            font-size: 16px;
+        }
+
+        .input-container {
+            flex-direction: column;
             align-items: center;
-            margin-top: 10px;
         }
 
-        .countdown-container span {
-            font-size: 24px;
-            font-weight: bold;
-            color: #FF99C8;
-            margin: 0 5px;
+        input[type="text"] {
+            max-width: 100%;
+            border-radius: 25px;
+            margin-bottom: 10px;
         }
+
+        button {
+            border-radius: 25px;
+        }
+
+        .image-container {
+            flex-wrap: wrap;
+        }
+
+        .image-container img {
+            width: 150px;
+            height: 150px;
+            margin: 10px;
+        }
+    }
+    @media screen and (max-width: 768px) {
+        main {
+            margin: 20px auto;
+            padding: 10px;
+        }
+
+        h2 {
+            font-size: 28px;
+        }
+
+        p {
+            font-size: 16px;
+        }
+
+        .input-container {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            max-width: 100%;
+            border-radius: 25px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            border-radius: 25px;
+        }
+
+        .image-container {
+            flex-wrap: wrap;
+        }
+
+        .image-container img {
+            width: 150px;
+            height: 150px;
+            margin: 10px;
+        }
+    }
     </style>
 </head>
 <body>
@@ -256,12 +330,14 @@
             <img src="{% static 'sonoshareapp/images/image3.jpg' %}" alt="Image 3">
         </div>
         <div class="note-container">
-            <p>Please note that conversions to and from YouTube Music are currently unavailable as we are working on integrating YouTube Music. Stay tuned for updates!</p>
+            <p>This is a demo version and only conversions from apple music to spotify are currently available</p>
         </div>
     </main>
 
     <script src="{% static 'celery_progress/celery_progress.js' %}"></script>
     <script>
+        
+
         document.addEventListener("DOMContentLoaded", function () {
             var playlistForm = document.getElementById('playlist-form');
             var progressContainer = document.getElementById('progress-container');

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+docker buildx build --platform linux/amd64 -t [registry.heroku.com/sonusshare/web](http://registry.heroku.com/sonusshare/web) --push .
+
+heroku container:release web -a sonusshare
+
+docker buildx build --platform linux/amd64 -t [registry.heroku.com/sonusshare/celery](http://registry.heroku.com/sonusshare/celery) --file Dockerfile.celery --push .
+
+ heroku container:release celery -a sonusshare
+
+ heroku logs --tail
+

@@ -1,7 +1,8 @@
 # utils_apple_music.py
 import requests
+import os
 
-APPLE_MUSIC_TOKEN = 'eyJhbGciOiJFUzI1NiIsImtpZCI6IjI0N0NaMzJSQUMiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiI3MzJOMzhMN0FNIiwiaWF0IjoxNzE1NjY1NTI1LCJleHAiOjE3MzE0NDI1MjV9.mlMPZwvG6eSi4D9SmJW_EzHlsPQ9EkghnStWwX9NFnaZYGfVrCACXhGAlVlzoUocH23f_S7EAz5RlMfPlPXWKw'
+APPLE_MUSIC_TOKEN = os.environ.get('APPLE_MUSIC_TOKEN')
 
 
 # Apple Music API functions

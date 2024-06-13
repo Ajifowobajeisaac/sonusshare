@@ -1,0 +1,17 @@
+{% extends 'sonoshareapp/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    /* Add your styles here */
+</style>
+<div class="register-container">
+    <h2>Register Your Email</h2>
+    <p>You have to register with your spotify verified email first as this is a demo.</p>
+    <form method="post" action="{% url 'beta_testing' %}">
+        {% csrf_token %}
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required>
+        <button type="submit">Register</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,58 @@
+<!-- error.html -->
+{% extends 'sonoshareapp/base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - SonusShare</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #FF0000;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            overflow-x: auto;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #FF99C8;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .button:hover {
+            background-color: #FF6B9F;
+        }
+    </style>
+</head>
+<body>
+    <h1>Oops! An Error Occurred</h1>
+    <p>We apologize for the inconvenience. Please find the error details below:</p>
+    
+    <h2>Error Message</h2>
+    <p>{{ error_message }}</p>
+    
+    <h2>Error Details</h2>
+    <ul>
+        <li><strong>Status Code:</strong> {{ error_details.status_code }}</li>
+        <li><strong>Response Text:</strong> {{ error_details.response_text }}</li>
+        <li><strong>Error Message:</strong> {{ error_details.error_message }}</li>
+    </ul>
+    
+    <p>If the problem persists, please contact our support team for further assistance.</p>
+    
+    <p><a href="{% url 'index' %}">Go back to Home</a></p>
+</body>
+</html>
+{% endblock %}

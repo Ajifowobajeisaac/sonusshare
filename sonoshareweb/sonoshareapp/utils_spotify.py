@@ -1,45 +1,126 @@
-
-import spotipy
-from spotipy.oauth2 import SpotifyOAuth
-import spotipy.util as util
+# utils_spotify.py
 from django.shortcuts import render, redirect
 import requests
+import urllib.parse
+import time
+from django.core.cache import cache
 
-SPOTIFY_CLIENT_ID = '31e4302c101d4027ab0da2c6be1763ca'
-SPOTIFY_CLIENT_SECRET = 'f78a7bde118241c0ae48493ff5bfe4ab'
-SPOTIFY_REDIRECT_URI = 'http://localhost:3333/callback/'
-SPOTIFY_SCOPE = 'playlist-read-private playlist-modify-public playlist-modify-private'
+SPOTIFY_CLIENT_ID = 'a11e3bfb94954f4d94d150e090851e9c'
+SPOTIFY_CLIENT_SECRET = 'b396b5e7d6c940a4a4d219a5bdcf3f07'
+SPOTIFY_REDIRECT_URI = 'http://www.sonusshare.com/callback/'
+SPOTIFY_SCOPE = 'playlist-read-private playlist-modify-private playlist-modify-public'
+
+SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize'
+SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token'
+API_BASE_URL = 'https://api.spotify.com/v1/'
 
 # Spotify API functions
 def get_spotify_playlist(request, playlist_id):
-    sp = spotipy.Spotify(auth=get_spotify_token(request))
-    return sp.playlist(playlist_id)
+    pass
+
+def spotify_auth(request):
+    auth_params = {
+        'client_id': SPOTIFY_CLIENT_ID,
+        'response_type': 'code',
+        'redirect_uri': SPOTIFY_REDIRECT_URI,
+        'scope': SPOTIFY_SCOPE,
+        'show_dialog': True
+    }
+    auth_url = f"{SPOTIFY_AUTH_URL}?{urllib.parse.urlencode(auth_params)}"
+    print("Redirecting to Spotify authentication page")
+    return redirect(auth_url)
+
+def spotify_callback(request):
+
+    code = request.GET.get('code')
+    print(f"Received code: {code}")  
+
+    if code:
+        token_data = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': SPOTIFY_REDIRECT_URI,
+            'client_id': SPOTIFY_CLIENT_ID,
+            'client_secret': SPOTIFY_CLIENT_SECRET,
+        }
+    else:
+        raise Exception("No code returned")
+    
+    token_response = requests.post(SPOTIFY_TOKEN_URL, data=token_data)
+
+    if token_response.status_code == 200:
+        token_info = token_response.json()
+        access_token = token_info['access_token']
+        request.session['access_token'] = access_token
+        return redirect('create_spotify_playlist')
+    else:
+        raise Exception("Failed to get Spotify access token")
+    
 
 def create_spotify_playlist(request):
-    client_id = SPOTIFY_CLIENT_ID
-    client_secret = SPOTIFY_CLIENT_SECRET
-    redirect_uri = SPOTIFY_REDIRECT_URI
-    scope = 'playlist-modify-public playlist-modify-private'
+    
+    access_token = request.session.get('access_token')
+    print(f"Access token from session: {access_token}")
+    if not access_token:
+        return redirect('spotify_auth')
 
-    token = util.prompt_for_user_token(request.session.session_key, scope, client_id, client_secret, redirect_uri)
+
+    headers = {
+        'Authorization': f'Bearer {access_token}',
+        'Content-Type': 'application/json',
+    }
 
     if request.method == 'POST':
         name = request.POST.get('name')
         description = request.POST.get('description')
         track_ids = request.POST.get('track_ids').split(',')
-        
 
-    if token:
-        sp = spotipy.Spotify(auth=token)
-        user_id = sp.me()['id']
-        playlist = sp.user_playlist_create(user_id, name, description)
-        sp.user_playlist_add_tracks(user_id, playlist['id'], track_ids)
-        playlist_url = playlist['external_urls']['spotify']
+        user_response = requests.get(f"{API_BASE_URL}me", headers=headers)
+        if user_response:            
+            user_data = user_response.json()
+            user_id = user_data['id']
+        else:
+            return render(request, 'sonoshareapp/register_email.html')
+
+
+
+
+        playlist_data = {
+            'name': name,
+            'description': description,
+            'public': False,
+        }
+        playlist_response = requests.post(f"{API_BASE_URL}users/{user_id}/playlists", headers=headers, json=playlist_data)
+        if playlist_response:
+            playlist_data = playlist_response.json()
+            if 'id' in playlist_data:
+                playlist_id = playlist_data['id']
+            else:
+                error_message = "Failed to create playlist"
+                error_details = {
+                    'status_code': playlist_response.status_code,
+                    'response_text': playlist_response.text,
+                    'error_message': error_message,
+                }
+                return render(request, 'sonoshareapp/error.html', {
+                    'error_message': error_message,
+                    'error_details': error_details,
+                })
+        else:
+            raise Exception("No playlist response")
+
+        try:
+            add_tracks_response = requests.post(f"{API_BASE_URL}playlists/{playlist_id}/tracks", headers=headers, json={'uris': [f"spotify:track:{track_id}" for track_id in track_ids]})
+        except Exception as e:
+            print(f"Error searching for track on Spotify. Error: {str(e)}")
+
+        playlist_url = playlist_data['external_urls']['spotify']
         return render(request, 'sonoshareapp/playlist_created.html', {
             'playlist_url': playlist_url,
         })
     else:
-        raise Exception("Failed to get Spotify access token")
+        print ("No request recieved")
+        return render(request, 'sonoshareapp/index.html')
 
 def search_track_on_spotify(track_name, artist_name):
     # Obtain an access token using the Client Credentials flow

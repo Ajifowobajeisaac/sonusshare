@@ -1,0 +1,240 @@
+<!-- get_access.html  -->
+{% extends 'sonoshareapp/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        text-align: center;
+    }
+
+    .hero-text {
+        color: #fff;
+        margin-bottom: 30px;
+    }
+
+    h2 {
+        font-size: 36px;
+        margin-top: 0;
+        margin-bottom: 10px;
+    }
+
+    p {
+        font-size: 20px;
+        color: #333;
+    }
+
+    .beta-testing-cta {
+        background-color: #FF99C8;
+        color: #fff;
+        border: none;
+        padding: 12px 30px;
+        font-size: 18px;
+        cursor: pointer;
+        border-radius: 25px;
+        text-decoration: none;
+        display: inline-block;
+        margin-top: 20px;
+        transition: background-color 0.3s ease;
+    }
+
+    .beta-testing-cta:hover {
+        background-color: #FF6B9F;
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 80%;
+        max-width: 500px;
+        border-radius: 8px;
+        position: relative;
+    }
+
+    .close {
+        color: #aaa;
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .modal-content h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    .modal-content p {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .modal-content form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .modal-content label {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+
+    .modal-content input[type="email"] {
+        padding: 12px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+
+    .modal-content button[type="submit"] {
+        padding: 12px 30px;
+        font-size: 18px;
+        background-color: #FF99C8;
+        color: #fff;
+        border: none;
+        border-radius: 25px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .modal-content button[type="submit"]:hover {
+        background-color: #FF6B9F;
+    }
+
+    @media screen and (max-width: 768px) {
+        .modal-content {
+            margin: 30% auto;
+            width: 90%;
+        }
+    }
+
+    .use-cases {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 50px;
+    }
+
+    .use-case {
+        text-align: center;
+        max-width: 300px;
+        padding: 20px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        margin: 20px;
+    }
+
+    .use-case:hover {
+        transform: translateY(-10px);
+    }
+
+    .use-case img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 10px 10px 0 0;
+        margin-bottom: 20px;
+    }
+
+    .use-case h3 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+
+    .use-case p {
+        font-size: 16px;
+        color: #666;
+    }
+
+    @media screen and (max-width: 768px) {
+        .use-cases {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .use-case {
+            max-width: 100%;
+            margin: 20px 0;
+        }
+    }
+</style>
+
+<main>
+    <div class="hero-text">
+        <h2>Share Your Playlists!</h2>
+        <p>Across Music Platforms</p>
+        <button class="beta-testing-cta" onclick="openModal()">Get Early Access</button>
+    </div>
+    <div class="platform-logo-container">
+        <img src="{% static 'sonoshareapp/images/spotify-logo.png' %}" alt="Spotify Logo">
+        <img src="{% static 'sonoshareapp/images/apple-music-logo.svg' %}" alt="Apple Music Logo">
+        <img src="{% static 'sonoshareapp/images/youtube-music-logo.svg' %}" alt="YouTube Music Logo">
+    </div>
+
+    <div class="use-cases">
+        <div class="use-case">
+            <img src="{% static 'sonoshareapp/images/top100.jpg' %}" alt="Top 100">
+            <h3>Convert Top 100s</h3>
+            <p>Easily convert Apple Music's Top 100 playlists to your Spotify account.</p>
+        </div>
+        <div class="use-case">
+            <img src="{% static 'sonoshareapp/images/discover.jpg' %}" alt="Discover">
+            <h3>Discover New Music</h3>
+            <p>Explore and convert playlists from other platforms to expand your music library.</p>
+        </div>
+        <div class="use-case">
+            <img src="{% static 'sonoshareapp/images/share.jpg' %}" alt="Share">
+            <h3>Share with Friends</h3>
+            <p>Seamlessly share your favorite playlists across different music platforms.</p>
+        </div>
+    </div>
+    <div id="beta-testing-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>SonusShare Beta Testing</h2>
+            <p>Thank you for your interest in testing SonusShare! To request access, please fill out the form below:</p>
+            <form method="post" action="{% url 'beta_testing' %}">
+                {% csrf_token %}
+                <label for="email">Your Spotify Email Address:</label>
+                <input type="email" id="email" name="email" required>
+                <button type="submit">Submit Request</button>
+            </form>
+        </div>
+    </div>
+    <div class="note-container">
+        <p>This is a demo version and only conversions from apple music to spotify are currently available.</p>
+    </div>
+</main>
+<script>
+    function openModal() {
+        document.getElementById("beta-testing-modal").style.display = "block";
+    }
+
+    function closeModal() {
+        document.getElementById("beta-testing-modal").style.display = "none";
+    }
+</script>
+{% endblock %}

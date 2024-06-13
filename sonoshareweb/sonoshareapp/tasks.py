@@ -1,14 +1,27 @@
 # tasks.py
 
 from celery_progress.backend import ProgressRecorder
-from .utils import extract_track_info, extract_playlist_id
+from .utils import extract_track_info, extract_playlist_id, sanitize_description
 from .utils_apple_music import get_apple_music_playlist
 from .utils_spotify import search_track_on_spotify
 from celery import Celery, shared_task
 import time
 
 
-app = Celery('tasks', broker='redis://localhost:6379')
+
+import os
+
+
+app = Celery('tasks', broker=os.environ.get('STACKHERO_REDIS_URL_TLS'))
+app.conf.update(
+    result_backend=os.environ.get('STACKHERO_REDIS_URL_TLS'),
+    task_serializer='json',
+    result_serializer='json',
+    accept_content=['application/json'],
+    redis_backend_use_ssl={
+        'ssl_cert_reqs': True
+    }
+)
 
 @shared_task(bind=True)
 def convert_playlist_(self, playlist_url):
@@ -33,10 +46,12 @@ def convert_playlist_(self, playlist_url):
                 progress_recorder.set_progress(i + 1, total_tracks, description=f"Converting track {i + 1} of {total_tracks} ({track['name']} - {track['artist']})")
 
             playlist_description = playlist['data'][0]['attributes'].get('description', {}).get('standard', '')
+            cleaned_description = sanitize_description(playlist_description)
+            
 
             return {
-                'playlist_name': playlist['data'][0]['attributes']['name'],
-                'playlist_description': playlist_description,
+                'playlist_name': f"{playlist['data'][0]['attributes']['name']}-converted",
+                'playlist_description': cleaned_description,
                 'track_id': spotify_track_ids,
                 'tracks': spotify_tracks,
             }

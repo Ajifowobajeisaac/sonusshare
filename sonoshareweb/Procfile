@@ -1,1 +1,2 @@
-web: gunicorn sonoshareweb.wsgi
+web: gunicorn sonoshareweb.wsgi --log-file -
+worker: celery -A sonoshareweb worker --loglevel=info  --broker=$STACKHERO_REDIS_URL_TLS

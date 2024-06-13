@@ -1,0 +1,12 @@
+{% extends 'sonoshareapp/base.html' %}
+{% load static %}
+{% block content %}
+<style>
+    /* Add your styles here */
+</style>
+<div class="exists-container">
+    <h2>Email Already Registered</h2>
+    <p>The email "{{ email }}" is already registered for beta testing. We will get back to you when access is granted.</p>
+    <a href="{% url 'index' %}">Go back to the home page</a>
+</div>
+{% endblock %}

@@ -1,3 +1,4 @@
+<!-- base.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
@@ -34,6 +35,13 @@
             display: flex;
             flex-direction: column;
             align-items: flex-start;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+
         }
 
         .logo-container {
@@ -93,8 +101,8 @@
         </div>
         <nav>
             <ul>
-                <li><a href="#" class="about">About</a></li>
-                <li><a href="#" class="contact-us">Contact Us</a></li>
+                <li><a href="{% url 'about' %}" class="about">About</a></li>
+                <li><a href="{% url 'contact' %}" class="contact-us">Contact Us</a></li>
             </ul>
         </nav>
     </header>
