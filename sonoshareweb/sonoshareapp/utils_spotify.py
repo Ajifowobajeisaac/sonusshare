@@ -4,58 +4,161 @@ import requests
 import urllib.parse
 import time
 from django.core.cache import cache
+from functools import lru_cache
+from django.conf import settings
+import base64
+import spotipy.util as util
+import spotipy
+import logging
+from spotipy.oauth2 import SpotifyOAuth
+from spotipy.oauth2 import SpotifyClientCredentials
 
-SPOTIFY_CLIENT_ID = 'a11e3bfb94954f4d94d150e090851e9c'
-SPOTIFY_CLIENT_SECRET = 'b396b5e7d6c940a4a4d219a5bdcf3f07'
-SPOTIFY_REDIRECT_URI = 'http://www.sonusshare.com/callback/'
+logger = logging.getLogger(__name__)
+
+SPOTIFY_CLIENT_ID = settings.SPOTIFY_CLIENT_ID
+SPOTIFY_CLIENT_SECRET = settings.SPOTIFY_CLIENT_SECRET
+SPOTIFY_REDIRECT_URI = settings.SPOTIFY_REDIRECT_URI
 SPOTIFY_SCOPE = 'playlist-read-private playlist-modify-private playlist-modify-public'
 
 SPOTIFY_AUTH_URL = 'https://accounts.spotify.com/authorize'
 SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token'
 API_BASE_URL = 'https://api.spotify.com/v1/'
 
+class SpotifyAPIError(Exception):
+    """Custom exception for Spotify API errors"""
+    pass
+
+@lru_cache(maxsize=1)
+def get_spotify_token():
+    """
+    Generate a Spotify access token.
+    Cached for 1 hour to avoid regenerating unnecessarily.
+    """
+    try:
+        # Check cache first
+        cached_token = cache.get('spotify_access_token')
+        if cached_token:
+            return cached_token
+
+        # Get credentials
+        client_id = settings.SPOTIFY_CLIENT_ID
+        client_secret = settings.SPOTIFY_CLIENT_SECRET
+
+        if not all([client_id, client_secret]):
+            raise SpotifyAPIError("Missing Spotify API credentials")
+
+        # Get new token
+        auth_url = 'https://accounts.spotify.com/api/token'
+        auth_response = requests.post(auth_url, {
+            'grant_type': 'client_credentials',
+            'client_id': client_id,
+            'client_secret': client_secret,
+        })
+        auth_response.raise_for_status()
+        token = auth_response.json()['access_token']
+        
+        # Cache the token for 1 hour (3600 seconds)
+        cache.set('spotify_access_token', token, timeout=3600)
+        return token
+
+    except Exception as e:
+        raise SpotifyAPIError(f"Failed to generate Spotify access token: {str(e)}")
+
+class SpotifyAPI:
+    """Class to handle Spotify API requests"""
+    
+    BASE_URL = "https://api.spotify.com/v1"
+    
+    def __init__(self):
+        self.client_id = settings.SPOTIFY_CLIENT_ID
+        self.client_secret = settings.SPOTIFY_CLIENT_SECRET
+        self.redirect_uri = settings.SPOTIFY_REDIRECT_URI
+        
+        if not all([self.client_id, self.client_secret, self.redirect_uri]):
+            raise SpotifyAPIError("Missing Spotify credentials in settings")
+        
+        # Use client credentials flow for non-user-specific operations
+        self.client_credentials_manager = SpotifyClientCredentials(
+            client_id=self.client_id,
+            client_secret=self.client_secret
+        )
+        self.sp = spotipy.Spotify(auth_manager=self.client_credentials_manager)
+    
+    @property
+    def access_token(self):
+        """Get the current access token from the client credentials manager"""
+        return self.client_credentials_manager.get_access_token()['access_token']
+    
+    def search_track(self, track_name, artist_name):
+        try:
+            query = f"track:{track_name} artist:{artist_name}"
+            results = self.sp.search(q=query, type='track', limit=1)
+            
+            if results['tracks']['items']:
+                return results['tracks']['items'][0]['id']
+            logger.warning(f"No track found for: {track_name} by {artist_name}")
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error searching track: {str(e)}")
+            return None
+            
+    def create_playlist(self, name, description, track_ids):
+        try:
+            user_id = self.sp.current_user()['id']
+            playlist = self.sp.user_playlist_create(
+                user_id, 
+                name,
+                public=False,
+                description=description
+            )
+            
+            if track_ids:
+                self.sp.playlist_add_items(playlist['id'], track_ids)
+            return playlist['id']
+            
+        except Exception as e:
+            logger.error(f"Error creating playlist: {str(e)}")
+            raise
+
 # Spotify API functions
 def get_spotify_playlist(request, playlist_id):
     pass
 
-def spotify_auth(request):
-    auth_params = {
-        'client_id': SPOTIFY_CLIENT_ID,
+def get_spotify_auth_url():
+    params = {
+        'client_id': settings.SPOTIFY_CLIENT_ID,
         'response_type': 'code',
-        'redirect_uri': SPOTIFY_REDIRECT_URI,
-        'scope': SPOTIFY_SCOPE,
+        'redirect_uri': settings.SPOTIFY_REDIRECT_URI,
+        'scope': 'playlist-read-private playlist-modify-public playlist-modify-private',
         'show_dialog': True
     }
-    auth_url = f"{SPOTIFY_AUTH_URL}?{urllib.parse.urlencode(auth_params)}"
-    print("Redirecting to Spotify authentication page")
+    return f'https://accounts.spotify.com/authorize?{urllib.parse.urlencode(params)}'
+
+def spotify_auth(request):
+    auth_url = get_spotify_auth_url()
     return redirect(auth_url)
 
 def spotify_callback(request):
-
-    code = request.GET.get('code')
-    print(f"Received code: {code}")  
-
-    if code:
-        token_data = {
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': SPOTIFY_REDIRECT_URI,
-            'client_id': SPOTIFY_CLIENT_ID,
-            'client_secret': SPOTIFY_CLIENT_SECRET,
-        }
-    else:
-        raise Exception("No code returned")
-    
-    token_response = requests.post(SPOTIFY_TOKEN_URL, data=token_data)
-
-    if token_response.status_code == 200:
-        token_info = token_response.json()
-        access_token = token_info['access_token']
-        request.session['access_token'] = access_token
-        return redirect('create_spotify_playlist')
-    else:
-        raise Exception("Failed to get Spotify access token")
-    
+    try:
+        auth_code = request.GET.get('code')
+        if not auth_code:
+            raise Exception("No authorization code received")
+            
+        auth_manager = SpotifyOAuth(
+            client_id=settings.SPOTIFY_CLIENT_ID,
+            client_secret=settings.SPOTIFY_CLIENT_SECRET,
+            redirect_uri=settings.SPOTIFY_REDIRECT_URI,
+            scope="playlist-modify-public playlist-modify-private playlist-read-private"
+        )
+        
+        token_info = auth_manager.get_access_token(auth_code)
+        request.session['spotify_token'] = token_info['access_token']
+        return redirect('convert_playlist')
+            
+    except Exception as e:
+        logger.error(f"Error in spotify callback: {str(e)}")
+        return redirect('error')
 
 def create_spotify_playlist(request):
     
@@ -158,3 +261,20 @@ def search_track_on_spotify(track_name, artist_name):
         print(f"Error searching for track: {response.text}")
     
     return None
+
+def search_tracks_on_spotify(track_info):
+    spotify = SpotifyAPI()
+    spotify_track_ids = []
+    failed_tracks = []
+    
+    for track in track_info:
+        track_id = spotify.search_track(track['name'], track['artist'])
+        if track_id:
+            spotify_track_ids.append(track_id)
+        else:
+            failed_tracks.append(f"{track['name']} by {track['artist']}")
+            
+    if failed_tracks:
+        logger.warning(f"Failed to find tracks: {', '.join(failed_tracks)}")
+        
+    return spotify_track_ids

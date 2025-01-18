@@ -1,2 +1,8 @@
-*.pyc
-env/
+# Environment variables
+.env
+*.p8
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

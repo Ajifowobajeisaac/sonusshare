@@ -14,28 +14,27 @@ from pathlib import Path
 import os
 import dj_database_url
 import ssl
-
-
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Static files directory
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'sonoshareapp', 'static'),
-]
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
+# Load environment variables from .env file
+env_path = BASE_DIR / '.env'
+load_dotenv(env_path, override=True)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY', default='django-insecure-x125b25u#ci_w9r$q*@hw7f-y)x@1k$ea3_8t%pib)lfxen2%r')
-
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'sonusshare-50c0483d2535.herokuapp.com', 'www.sonusshare.com']
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    'www.sonusshare.com',
+    'sonusshare.com',
+]
 
 TIME_ZONE = 'UTC'
 
@@ -108,18 +107,28 @@ SMTP_ENCRYPTION = 'STARTTLS'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
-DATABASE_URL = os.environ.get('DATABASE_URL')
-db_from_env = dj_database_url.config(default=DATABASE_URL, conn_max_age=500, ssl_require=True)
-DATABASES['default'].update(db_from_env)
+# Redis Settings
+REDIS_URL = os.environ.get('STACKHERO_REDIS_URL_TLS', 'redis://localhost:6379')
+
+# Celery Settings
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TRACK_STARTED = True
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -164,15 +173,68 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CELERY_BROKER_URL = os.environ.get('STACKHERO_REDIS_URL_TLS')
-CELERY_RESULT_BACKEND = os.environ.get('STACKHERO_REDIS_URL_TLS')
-CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': ssl.CERT_REQUIRED}
-CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
 
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Celery Progress settings
+CELERY_TRACK_STARTED = True
+CELERY_TASK_TRACK_STARTED = True
+
+CELERY_PROGRESS_URL = 'celery-progress'
+
+# Security Settings
+if DEBUG:
+    # Development settings - disable all HTTPS/SSL requirements
+    SECURE_SSL_REDIRECT = False
+    SECURE_PROXY_SSL_HEADER = None
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
+    
+    # Development URLs - add all possible local development URLs
+    ALLOWED_HOSTS = [
+        'localhost',
+        '127.0.0.1',
+        '[::1]',  # IPv6 localhost
+        '.localhost',  # Allow subdomains of localhost
+    ]
+
+    # Additional development settings
+    USE_X_FORWARDED_HOST = False
+    USE_X_FORWARDED_PORT = False
+    USE_X_FORWARDED_PROTO = False
+
+else:
+    # Production settings remain the same
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    
+    # Production URLs
+    ALLOWED_HOSTS = [
+        'sonusshare-50c0483d2535.herokuapp.com',
+        'www.sonusshare.com',
+        'sonusshare.com',
+    ]
+
+# SSL/HTTPS Settings
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+else:
+    SECURE_SSL_REDIRECT = False
+    SECURE_PROXY_SSL_HEADER = None
 
 # Logging
 LOGGING = {
@@ -190,3 +252,22 @@ LOGGING = {
         },
     },
 }
+
+# Apple Music API Settings
+APPLE_TEAM_ID = os.environ.get('APPLE_TEAM_ID')
+APPLE_KEY_ID = os.environ.get('APPLE_KEY_ID')
+APPLE_PRIVATE_KEY = os.environ.get('APPLE_PRIVATE_KEY')
+
+# If private key is not in environment, try to load from file
+if not APPLE_PRIVATE_KEY:
+    try:
+        key_path = os.path.join(BASE_DIR, 'sonoshareapp', 'apple_auth_key.p8')
+        with open(key_path, 'r') as key_file:
+            APPLE_PRIVATE_KEY = key_file.read().strip()
+    except FileNotFoundError:
+        APPLE_PRIVATE_KEY = None
+
+# Spotify API Settings
+SPOTIFY_CLIENT_ID = os.environ.get('SPOTIFY_CLIENT_ID')
+SPOTIFY_CLIENT_SECRET = os.environ.get('SPOTIFY_CLIENT_SECRET')
+SPOTIFY_REDIRECT_URI = os.environ.get('SPOTIFY_REDIRECT_URI', 'http://127.0.0.1:8000/callback/')

@@ -2,6 +2,7 @@
 import re
 from html import unescape
 from html.parser import HTMLParser
+from urllib.parse import urlparse, parse_qs
 
 
 # Utility functions
@@ -16,44 +17,82 @@ class MyHTMLParser(HTMLParser):
     def get_plain_text(self):
         return ''.join(self.plain_text)
 
+class PlaylistError(Exception):
+    """Custom exception for playlist-related errors"""
+    pass
+
 def sanitize_description(description):
-    parser = MyHTMLParser()
-    parser.feed(description)
-    return parser.get_plain_text()
+    """Clean and format playlist descriptions"""
+    if not description:
+        return ""
+    
+    # Remove HTML tags
+    clean_desc = re.sub(r'<[^>]+>', '', description)
+    
+    # Remove excessive whitespace
+    clean_desc = ' '.join(clean_desc.split())
+    
+    # Limit length
+    MAX_LENGTH = 300
+    if len(clean_desc) > MAX_LENGTH:
+        clean_desc = clean_desc[:MAX_LENGTH-3] + '...'
+    
+    return clean_desc
 
+def extract_playlist_id(url, service):
+    """Extract playlist ID from various streaming service URLs"""
+    try:
+        parsed_url = urlparse(url)
+        
+        if service == 'spotify':
+            # Handle Spotify URLs
+            path_parts = parsed_url.path.split('/')
+            if 'playlist' in path_parts:
+                return path_parts[path_parts.index('playlist') + 1]
+        
+        elif service == 'apple_music':
+            # Handle Apple Music URLs
+            path_parts = parsed_url.path.split('/')
+            if 'playlist' in path_parts:
+                return path_parts[-1]
+        
+        elif service == 'youtube':
+            # Handle YouTube URLs
+            if 'list' in parse_qs(parsed_url.query):
+                return parse_qs(parsed_url.query)['list'][0]
+        
+        raise PlaylistError(f"Could not extract playlist ID from {url}")
+    
+    except Exception as e:
+        raise PlaylistError(f"Error extracting playlist ID: {str(e)}")
 
-def extract_playlist_id(playlist_url, platform):
-    if platform == 'spotify':
-        pattern = re.compile(r'playlist/([a-zA-Z0-9_-]+)')
-    elif platform == 'apple_music':
-        pattern = re.compile(r'pl\.([a-zA-Z0-9_-]+)')
-    else:
-        return None
-
-    match = pattern.search(playlist_url)
-    if match:
-        if platform == 'apple_music':
-            return f"pl.{match.group(1)}"  # Include the 'pl.' prefix for Apple Music
-        else:
-            return match.group(1)
-    else:
-        return None
-
-def extract_track_info(tracks, platform):
-    track_info = []
-    for track in tracks:
-        if platform == 'spotify':
-            track_info.append({
-                'name': track['track']['name'],
-                'artist': track['track']['artists'][0]['name'],
-                'spotify_id': track['track']['id'],
-                'apple_music_id': None  # You'll need to search for the track on Apple Music and get its ID
-            })
-        elif platform == 'apple_music':
-            track_info.append({
-                'name': track['attributes']['name'],
-                'artist': track['attributes']['artistName'],
-                'apple_music_id': track['id'],
-                'spotify_id': None  # You'll need to search for the track on Spotify and get its ID
-            })
-    return track_info
+def extract_track_info(tracks_data, service):
+    """Extract standardized track information from various services"""
+    try:
+        track_info = []
+        
+        for track in tracks_data:
+            if service == 'spotify':
+                info = {
+                    'name': track['name'],
+                    'artist': track['artists'][0]['name'],
+                    'album': track['album']['name'],
+                    'duration_ms': track['duration_ms'],
+                    'isrc': track.get('external_ids', {}).get('isrc')
+                }
+            
+            elif service == 'apple_music':
+                info = {
+                    'name': track['attributes']['name'],
+                    'artist': track['attributes']['artistName'],
+                    'album': track['attributes']['albumName'],
+                    'duration_ms': track['attributes']['durationInMillis'],
+                    'isrc': track['attributes'].get('isrc')
+                }
+            
+            track_info.append(info)
+        
+        return track_info
+    
+    except Exception as e:
+        raise PlaylistError(f"Error extracting track info: {str(e)}")

@@ -66,33 +66,53 @@
     .create-button:hover {
         background-color: #FF6F91;
     }
+
+    .status-success {
+        color: #4CAF50;
+    }
+    .status-failed {
+        color: #f44336;
+    }
+    .summary-container {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+    }
 </style>
 
 <div class="review-container">
     <div class="playlist-info">
-        <p><strong>Playlist Name:</strong> {{ playlist_name }}</p>
-        {% if playlist_description %}
-            <p><strong>Playlist Description:</strong> {{ playlist_description }}</p>
-        {% endif %}
+        <h2>{{ playlist_name }}</h2>
+        <p>{{ playlist_description }}</p>
+        <div class="summary-container">
+            <h3>Conversion Summary</h3>
+            <p>Success Rate: {{ success_rate }}</p>
+            <p>Total Tracks: {{ matched_tracks|length }}</p>
+            <p>Successfully Matched: {{ track_ids|length }}</p>
+            <p>Failed Matches: {{ failed_tracks|length }}</p>
+        </div>
     </div>
 
     <div class="song-table-container">
         <table>
             <thead>
                 <tr>
-                    <th>Source Track</th>
-                    <th>Spotify Track</th>
+                    <th>Track Name</th>
+                    <th>Artist</th>
+                    <th>Status</th>
                 </tr>
             </thead>
             <tbody>
-                {% for track_name, artist_name in tracks.items %}
+                {% for track in matched_tracks %}
                 <tr>
-                    <td>{{ track_name }} - {{ artist_name }}</td>
-                    <td>
-                        {% if track_name in tracks %}
-                            {{ track_name }} - {{ artist_name }}
+                    <td>{{ track.name }}</td>
+                    <td>{{ track.artist }}</td>
+                    <td class="{% if track.matched %}status-success{% else %}status-failed{% endif %}">
+                        {% if track.matched %}
+                            ✓ Matched
                         {% else %}
-                            No match found
+                            ✗ No match found
                         {% endif %}
                     </td>
                 </tr>
@@ -102,13 +122,7 @@
     </div>
 
     <div class="create-button-container">
-        <form method="post" action="{% url 'create_spotify_playlist' %}">
-            {% csrf_token %}
-            <input type="hidden" name="name" value="{{ playlist_name }}">
-            <input type="hidden" name="description" value="{{ playlist_description }}">
-            <input type="hidden" name="track_ids" value="{{ track_id|join:',' }}">
-            <button type="submit" class="create-button">Create Playlist</button>
-        </form>
+        <button onclick="createPlaylist()">Create Playlist on {{ platform|title }}</button>
     </div>
 </div>
 {% endblock %}
